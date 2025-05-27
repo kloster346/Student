@@ -1,20 +1,35 @@
 import request from '@/utils/request'
 
 // 获取选课列表
-export function getSCList(params) {
+export function getScList(params) {
   return request({
     url: '/sc',
     method: 'get',
-    params
+    params: {
+      page: params.page || 1,
+      size: params.size || 10,
+      keyword: params.keyword
+    }
   })
 }
 
-// 添加选课
-export function addSC(data) {
+// 获取单个选课记录
+export function getSc(sno, cno) {
+  return request({
+    url: `/sc/${sno}/${cno}`,
+    method: 'get'
+  })
+}
+
+// 创建选课记录
+export function createSc(data) {
   return request({
     url: '/sc',
     method: 'post',
-    data
+    data: {
+      sno: data.sno,
+      cno: data.cno
+    }
   })
 }
 
@@ -23,14 +38,25 @@ export function updateGrade(sno, cno, data) {
   return request({
     url: `/sc/${sno}/${cno}`,
     method: 'put',
-    data
+    data: {
+      grade: data.grade
+    }
   })
 }
 
 // 退课
-export function deleteSC(sno, cno) {
+export function deleteSc(sno, cno) {
   return request({
     url: `/sc/${sno}/${cno}`,
     method: 'delete'
+  })
+}
+
+// 批量退课
+export function batchDeleteSc(records) {
+  return request({
+    url: '/sc/batch',
+    method: 'delete',
+    data: { records }
   })
 } 
