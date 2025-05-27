@@ -72,6 +72,25 @@ public class Result<T> {
   }
 
   /**
+   * 失败返回结果
+   * 
+   * @param businessCode 业务错误码
+   */
+  public static <T> Result<T> failed(BusinessCode businessCode) {
+    return new Result<>(businessCode.getCode(), businessCode.getMessage(), null);
+  }
+
+  /**
+   * 失败返回结果
+   * 
+   * @param businessCode 业务错误码
+   * @param message      错误信息
+   */
+  public static <T> Result<T> failed(BusinessCode businessCode, String message) {
+    return new Result<>(businessCode.getCode(), message, null);
+  }
+
+  /**
    * 参数验证失败返回结果
    */
   public static <T> Result<T> validateFailed() {

@@ -1,8 +1,11 @@
 package demo.ch7_5.common;
 
+import lombok.Getter;
+
 /**
  * 响应状态码枚举类
  */
+@Getter
 public enum ResultCode {
   SUCCESS(200, "操作成功"),
   FAILED(500, "操作失败"),
@@ -18,11 +21,4 @@ public enum ResultCode {
     this.message = message;
   }
 
-  public Integer getCode() {
-    return code;
-  }
-
-  public String getMessage() {
-    return message;
-  }
 }
