@@ -80,33 +80,6 @@ CREATE TABLE sc (
 - 外键索引：sno -> student(sno)
 - 外键索引：cno -> course(cno)
 
-### 4. 文件表（file_info）
-
-#### 表结构
-```sql
-CREATE TABLE file_info (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,  -- 文件ID
-    filename VARCHAR(255) NOT NULL,        -- 文件名
-    author VARCHAR(100) NOT NULL,          -- 作者
-    file_type VARCHAR(20) NOT NULL,        -- 文件类型
-    file_path VARCHAR(255) NOT NULL,       -- 存储路径
-    upload_time DATETIME DEFAULT CURRENT_TIMESTAMP  -- 上传时间
-);
-```
-
-#### 字段说明
-| 字段名 | 类型 | 长度 | 允许空 | 默认值 | 说明 |
-|--------|------|------|--------|--------|------|
-| id | BIGINT | - | 否 | 自增 | 文件ID，主键 |
-| filename | VARCHAR | 255 | 否 | 无 | 文件名 |
-| author | VARCHAR | 100 | 否 | 无 | 作者 |
-| file_type | VARCHAR | 20 | 否 | 无 | 文件类型 |
-| file_path | VARCHAR | 255 | 否 | 无 | 存储路径 |
-| upload_time | DATETIME | - | 否 | CURRENT_TIMESTAMP | 上传时间 |
-
-#### 索引
-- 主键索引：id
-
 ## 数据库关系图
 
 ```mermaid
@@ -130,14 +103,6 @@ erDiagram
         varchar sno PK,FK
         varchar cno PK,FK
         decimal grade
-    }
-    file_info {
-        bigint id PK
-        varchar filename
-        varchar author
-        varchar file_type
-        varchar file_path
-        datetime upload_time
     }
 ```
 
@@ -190,16 +155,6 @@ CREATE TABLE sc (
     PRIMARY KEY (sno, cno),
     FOREIGN KEY (sno) REFERENCES student(sno),
     FOREIGN KEY (cno) REFERENCES course(cno)
-);
-
--- 创建文件表
-CREATE TABLE file_info (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    filename VARCHAR(255) NOT NULL,
-    author VARCHAR(100) NOT NULL,
-    file_type VARCHAR(20) NOT NULL,
-    file_path VARCHAR(255) NOT NULL,
-    upload_time DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
