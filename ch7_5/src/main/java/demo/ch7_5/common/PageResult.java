@@ -1,14 +1,34 @@
 package demo.ch7_5.common;
 
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * 分页结果
+ */
+@Data
 public class PageResult<T> {
-  private long total;
-  private java.util.List<T> list;
+  /**
+   * 总记录数
+   */
+  private Long total;
 
-  public PageResult(long total, java.util.List<T> list) {
+  /**
+   * 数据列表
+   */
+  private List<T> list;
+
+  public PageResult(Long total, List<T> list) {
     this.total = total;
     this.list = list;
+  }
+
+  /**
+   * 创建空结果
+   */
+  public static <T> PageResult<T> empty() {
+    return new PageResult<>(0L, Collections.emptyList());
   }
 }

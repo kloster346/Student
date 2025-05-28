@@ -3,13 +3,24 @@ package demo.ch7_5.common;
 import lombok.Data;
 
 /**
- * 统一响应结果类
+ * 通用响应结果
  */
 @Data
 public class Result<T> {
-  private Integer code; // 状态码
-  private String message; // 响应信息
-  private T data; // 响应数据
+  /**
+   * 状态码
+   */
+  private Integer code;
+
+  /**
+   * 响应消息
+   */
+  private String message;
+
+  /**
+   * 响应数据
+   */
+  private T data;
 
   private Result(Integer code, String message, T data) {
     this.code = code;
@@ -18,19 +29,24 @@ public class Result<T> {
   }
 
   /**
-   * 成功返回结果
+   * 成功响应
    */
-  public static <T> Result<T> success() {
-    return new Result<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), null);
+  public static <T> Result<T> success(T data) {
+    return new Result<>(200, "success", data);
+  }
+
+  /**
+   * 失败响应
+   */
+  public static <T> Result<T> error(Integer code, String message) {
+    return new Result<>(code, message, null);
   }
 
   /**
    * 成功返回结果
-   * 
-   * @param data 获取的数据
    */
-  public static <T> Result<T> success(T data) {
-    return new Result<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), data);
+  public static <T> Result<T> success() {
+    return new Result<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), null);
   }
 
   /**

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="demo.ch7_5.mapper.StudentCourseMapper">
+    <!-- 公共查询条件 -->
+    <sql id="queryCondition">
+        <where>
+            <if test="query.studentName != null and query.studentName != ''">
+                s.sname LIKE CONCAT('%', #{query.studentName}, '%')
+            </if>
+            <if test="query.courseName != null and query.courseName != ''">
+                AND c.cname LIKE CONCAT('%', #{query.courseName}, '%')
+            </if>
+            <if test="query.minGrade != null">
+                AND sc.grade >= #{query.minGrade}
+            </if>
+            <if test="query.maxGrade != null">
+                AND sc.grade &lt;= #{query.maxGrade}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 查询学生选课信息 -->
+    <select id="selectStudentCourses" resultType="demo.ch7_5.entity.dto.StudentCourseDTO">
+        SELECT 
+            s.sno AS studentNo,
+            s.sname AS studentName,
+            c.cno AS courseNo,
+            c.cname AS courseName,
+            c.credit AS credit,
+            sc.grade AS grade
+        FROM student s
+        LEFT JOIN sc ON s.sno = sc.sno
+        LEFT JOIN course c ON sc.cno = c.cno
+        <include refid="queryCondition"/>
+        <if test="query.sortField != null and query.sortField != ''">
+            ORDER BY 
+            <choose>
+                <when test="query.sortField == 'studentName'">s.sname</when>
+                <when test="query.sortField == 'courseName'">c.cname</when>
+                <when test="query.sortField == 'grade'">sc.grade</when>
+                <when test="query.sortField == 'credit'">c.credit</when>
+                <otherwise>s.sno</otherwise>
+            </choose>
+            <if test="query.sortOrder != null and query.sortOrder.toLowerCase() == 'desc'">
+                DESC
+            </if>
+        </if>
+        LIMIT #{query.page}, #{query.size}
+    </select>
+
+    <!-- 统计总记录数 -->
+    <select id="countStudentCourses" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM student s
+        LEFT JOIN sc ON s.sno = sc.sno
+        LEFT JOIN course c ON sc.cno = c.cno
+        <include refid="queryCondition"/>
+    </select>
+</mapper> 
