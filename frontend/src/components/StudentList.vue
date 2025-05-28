@@ -1,101 +1,86 @@
 <template>
   <div class="student-list">
-    <h2>学生管理</h2>
-    
-    <!-- 添加学生表单 -->
-    <el-form :inline="true" :model="newStudent" class="demo-form-inline">
-      <el-form-item label="学号">
-        <el-input v-model="newStudent.sno" placeholder="学号" />
-      </el-form-item>
-      <el-form-item label="姓名">
-        <el-input v-model="newStudent.sname" placeholder="姓名" />
-      </el-form-item>
-      <el-form-item label="性别">
-        <el-select v-model="newStudent.ssex" placeholder="性别">
-          <el-option label="男" value="男" />
-          <el-option label="女" value="女" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="年龄">
-        <el-input v-model.number="newStudent.sage" placeholder="年龄" type="number" />
-      </el-form-item>
-      <el-form-item label="系别">
-        <el-input v-model="newStudent.sdept" placeholder="系别" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="handleAdd">添加学生</el-button>
-      </el-form-item>
-    </el-form>
-
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="请输入关键词搜索"
-        style="width: 200px"
-        clearable
-        @clear="handleSearch"
-        @keyup.enter="handleSearch"
-      >
-        <template #append>
-          <el-button @click="handleSearch">
-            <el-icon><Search /></el-icon>
-          </el-button>
-        </template>
-      </el-input>
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <el-button type="primary" @click="handleAdd">添加学生</el-button>
+      <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
+        批量删除
+      </el-button>
     </div>
 
-    <!-- 学生列表 -->
-    <el-table :data="students" style="width: 100%" v-loading="loading">
+    <!-- 数据表格 -->
+    <el-table
+      v-loading="loading"
+      :data="tableData"
+      border
+      style="width: 100%"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" />
       <el-table-column prop="sno" label="学号" width="120" />
       <el-table-column prop="sname" label="姓名" width="120" />
       <el-table-column prop="ssex" label="性别" width="80" />
       <el-table-column prop="sage" label="年龄" width="80" />
-      <el-table-column prop="sdept" label="系别" width="120" />
-      <el-table-column label="操作" width="200">
-        <template #default="scope">
-          <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+      <el-table-column prop="sdept" label="系别" />
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 分页器 -->
+    <!-- 分页 -->
     <div class="pagination-container">
       <el-pagination
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :page-sizes="[10, 20, 30, 50]"
+        :current-page="page"
+        :page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
         :total="total"
         layout="total, sizes, prev, pager, next, jumper"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
+        @update:current-page="page = $event"
+        @update:page-size="size = $event"
       />
     </div>
 
-    <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" title="编辑学生信息">
-      <el-form :model="editingStudent">
-        <el-form-item label="姓名">
-          <el-input v-model="editingStudent.sname" />
+    <!-- 添加/编辑对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogType === 'add' ? '添加学生' : '编辑学生'"
+      width="500px"
+    >
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="80px"
+        style="padding: 0 20px"
+      >
+        <el-form-item label="学号" prop="sno">
+          <el-input v-model="form.sno" :disabled="dialogType === 'edit'" />
         </el-form-item>
-        <el-form-item label="性别">
-          <el-select v-model="editingStudent.ssex">
+        <el-form-item label="姓名" prop="sname">
+          <el-input v-model="form.sname" />
+        </el-form-item>
+        <el-form-item label="性别" prop="ssex">
+          <el-select v-model="form.ssex" style="width: 100%">
             <el-option label="男" value="男" />
             <el-option label="女" value="女" />
           </el-select>
         </el-form-item>
-        <el-form-item label="年龄">
-          <el-input v-model.number="editingStudent.sage" type="number" />
+        <el-form-item label="年龄" prop="sage">
+          <el-input-number v-model="form.sage" :min="0" :max="150" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="系别">
-          <el-input v-model="editingStudent.sdept" />
+        <el-form-item label="系别" prop="sdept">
+          <el-input v-model="form.sdept" />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleUpdate">确定</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -103,129 +88,156 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
-import { getStudents, addStudent, updateStudent, deleteStudent } from '../api'
+import { ref, reactive } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getStudents, addStudent, updateStudent, deleteStudent, deleteStudentBatch } from '@/api'
 
-// 学生列表数据
-const students = ref([])
+// 表格数据
+const tableData = ref([])
 const loading = ref(false)
-
-// 分页相关
-const currentPage = ref(1)
-const pageSize = ref(10)
 const total = ref(0)
+const page = ref(1)
+const size = ref(10)
+const selectedRows = ref([])
 
-// 搜索相关
-const searchKeyword = ref('')
-
-// 新学生表单数据
-const newStudent = ref({
+// 对话框数据
+const dialogVisible = ref(false)
+const dialogType = ref('add')
+const formRef = ref(null)
+const form = reactive({
   sno: '',
   sname: '',
   ssex: '男',
-  sage: '',
+  sage: 18,
   sdept: ''
 })
 
-// 编辑相关数据
-const dialogVisible = ref(false)
-const editingStudent = ref({})
+// 表单验证规则
+const rules = {
+  sno: [
+    { required: true, message: '请输入学号', trigger: 'blur' },
+    { pattern: /^\d{7}$/, message: '学号必须是7位数字', trigger: 'blur' }
+  ],
+  sname: [
+    { required: true, message: '请输入姓名', trigger: 'blur' },
+    { min: 2, max: 10, message: '长度在 2 到 10 个字符', trigger: 'blur' }
+  ],
+  ssex: [{ required: true, message: '请选择性别', trigger: 'change' }],
+  sage: [{ required: true, message: '请输入年龄', trigger: 'blur' }],
+  sdept: [{ required: true, message: '请输入系别', trigger: 'blur' }]
+}
 
-// 获取学生列表
-const fetchStudents = async () => {
+// 加载数据
+const loadData = async () => {
   loading.value = true
   try {
-    const response = await getStudents({
-      page: currentPage.value,
-      size: pageSize.value,
-      keyword: searchKeyword.value
-    })
-    students.value = response.data.data.list
-    total.value = response.data.data.total
-  } catch (error) {
-    ElMessage.error('获取学生列表失败')
+    const params = {
+      page: page.value,
+      size: size.value
+    }
+    const response = await getStudents(params)
+    tableData.value = response.list
+    total.value = response.total
   } finally {
     loading.value = false
   }
 }
 
-// 处理搜索
-const handleSearch = () => {
-  currentPage.value = 1
-  fetchStudents()
+// 处理选择变化
+const handleSelectionChange = (rows) => {
+  selectedRows.value = rows
 }
 
-// 处理页码改变
-const handleCurrentChange = (page) => {
-  currentPage.value = page
-  fetchStudents()
-}
-
-// 处理每页数量改变
-const handleSizeChange = (size) => {
-  pageSize.value = size
-  currentPage.value = 1
-  fetchStudents()
-}
-
-// 添加学生
-const handleAdd = async () => {
-  try {
-    await addStudent(newStudent.value)
-    ElMessage.success('添加成功')
-    fetchStudents()
-    // 清空表单
-    newStudent.value = {
-      sno: '',
-      sname: '',
-      ssex: '男',
-      sage: '',
-      sdept: ''
-    }
-  } catch (error) {
-    ElMessage.error('添加失败')
-  }
-}
-
-// 打开编辑对话框
-const handleEdit = (row) => {
-  editingStudent.value = { ...row }
+// 处理添加
+const handleAdd = () => {
+  dialogType.value = 'add'
+  form.sno = ''
+  form.sname = ''
+  form.ssex = '男'
+  form.sage = 18
+  form.sdept = ''
   dialogVisible.value = true
 }
 
-// 更新学生信息
-const handleUpdate = async () => {
-  try {
-    await updateStudent(editingStudent.value.sno, editingStudent.value)
-    ElMessage.success('更新成功')
-    dialogVisible.value = false
-    fetchStudents()
-  } catch (error) {
-    ElMessage.error('更新失败')
-  }
+// 处理编辑
+const handleEdit = (row) => {
+  dialogType.value = 'edit'
+  Object.assign(form, row)
+  dialogVisible.value = true
 }
 
-// 删除学生
+// 处理删除
 const handleDelete = async (row) => {
   try {
+    await ElMessageBox.confirm('确定要删除这条记录吗？', '提示', {
+      type: 'warning'
+    })
     await deleteStudent(row.sno)
     ElMessage.success('删除成功')
-    // 如果当前页只有一条数据，删除后跳转到上一页
-    if (students.value.length === 1 && currentPage.value > 1) {
-      currentPage.value--
-    }
-    fetchStudents()
+    loadData()
   } catch (error) {
-    ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+    }
   }
 }
 
-// 页面加载时获取学生列表
-onMounted(() => {
-  fetchStudents()
-})
+// 处理批量删除
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedRows.value.length} 条记录吗？`,
+      '提示',
+      {
+        type: 'warning'
+      }
+    )
+    const ids = selectedRows.value.map(row => row.sno)
+    await deleteStudentBatch(ids)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+    }
+  }
+}
+
+// 处理表单提交
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+    if (dialogType.value === 'add') {
+      await addStudent(form)
+      ElMessage.success('添加成功')
+    } else {
+      await updateStudent(form.sno, form)
+      ElMessage.success('更新成功')
+    }
+    dialogVisible.value = false
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('提交失败:', error)
+    }
+  }
+}
+
+// 处理每页数量变化
+const handleSizeChange = (val) => {
+  size.value = val
+  loadData()
+}
+
+// 处理页码变化
+const handleCurrentChange = (val) => {
+  page.value = val
+  loadData()
+}
+
+// 初始加载
+loadData()
 </script>
 
 <style scoped>
@@ -233,7 +245,7 @@ onMounted(() => {
   padding: 20px;
 }
 
-.search-bar {
+.toolbar {
   margin-bottom: 20px;
 }
 

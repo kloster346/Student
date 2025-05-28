@@ -24,6 +24,12 @@ const routes = [
         name: 'SelectionManagement',
         component: () => import('@/views/selection/SelectionView.vue'),
         meta: { title: '选课管理' }
+      },
+      {
+        path: 'query',
+        name: 'StudentCourseQuery',
+        component: () => import('@/views/query/StudentCourseQueryView.vue'),
+        meta: { title: '选课查询' }
       }
     ]
   }
