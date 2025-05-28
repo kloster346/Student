@@ -3,7 +3,7 @@
 ## 接口规范
 
 ### 基础信息
-- 基础URL: `http://localhost:8080/api`
+- 基础URL: `http://localhost:8081/api`
 - 请求方式: GET, POST, PUT, DELETE
 - 数据格式: JSON
 - 字符编码: UTF-8

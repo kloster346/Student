@@ -53,7 +53,7 @@ npm run serve
 
 ## 接口说明
 
-所有接口基础URL为：`http://localhost:8080/api`
+所有接口基础URL为：`http://localhost:8081/api`
 
 ### 学生接口
 - 获取学生列表：GET /students
