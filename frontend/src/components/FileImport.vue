@@ -2,7 +2,14 @@
 <template>
   <div class="file-import">
     <!-- 文件上传区域 -->
-    <div class="upload-area" @drop.prevent="handleDrop" @dragover.prevent>
+    <div 
+      class="upload-area" 
+      :class="{ 'is-dragover': isDragover }"
+      @drop.prevent="handleDrop" 
+      @dragover.prevent="handleDragover"
+      @dragleave.prevent="handleDragleave"
+      @dragenter.prevent="handleDragenter"
+    >
       <el-upload
         ref="uploadRef"
         :action="props.uploadUrl"
@@ -13,6 +20,8 @@
         :on-error="handleError"
         :on-progress="handleProgress"
         :headers="headers"
+        :auto-upload="true"
+        :http-request="customUpload"
       >
         <div class="upload-content">
           <el-icon class="upload-icon"><upload-filled /></el-icon>
@@ -21,6 +30,7 @@
             <el-button type="primary" link>点击上传</el-button>
           </div>
           <div class="upload-tip">支持 .csv 格式文件</div>
+          <div class="upload-tip">文件大小不超过5MB</div>
         </div>
       </el-upload>
     </div>
@@ -75,6 +85,7 @@
 import { ref, computed, defineProps } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'
 
 const props = defineProps({
   uploadUrl: {
@@ -99,6 +110,7 @@ const uploading = ref(false)
 const uploadProgress = ref(0)
 const uploadResult = ref(null)
 const failures = ref([])
+const isDragover = ref(false)
 
 // 计算上传结果的显示信息
 const resultTitle = computed(() => {
@@ -186,11 +198,69 @@ const handleError = (error) => {
   }
 }
 
-// 处理拖拽上传
-const handleDrop = (e) => {
+// 自定义上传方法
+const customUpload = async ({ file }) => {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    uploading.value = true
+    uploadProgress.value = 0
+    
+    const response = await axios.post(props.uploadUrl, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...headers
+      },
+      onUploadProgress: (progressEvent) => {
+        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        uploadProgress.value = percent
+      }
+    })
+    
+    handleSuccess(response.data)
+  } catch (error) {
+    handleError(error)
+  }
+}
+
+// 处理拖拽相关事件
+const handleDragenter = (e) => {
+  e.preventDefault()
+  isDragover.value = true
+}
+
+const handleDragover = (e) => {
+  e.preventDefault()
+  isDragover.value = true
+}
+
+const handleDragleave = (e) => {
+  e.preventDefault()
+  isDragover.value = false
+}
+
+const handleDrop = async (e) => {
+  e.preventDefault()
+  isDragover.value = false
   const files = e.dataTransfer.files
+  
   if (files.length > 0) {
-    uploadRef.value?.handleStart(files[0])
+    const file = files[0]
+    
+    // 验证文件
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      ElMessage.error('只能上传CSV文件！')
+      return
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      ElMessage.error('文件大小不能超过5MB！')
+      return
+    }
+    
+    // 使用自定义上传方法
+    await customUpload({ file })
   }
 }
 </script>
@@ -206,34 +276,53 @@ const handleDrop = (e) => {
 .upload-area {
   border: 2px dashed #dcdfe6;
   border-radius: 6px;
-  padding: 20px;
+  padding: 40px 20px;
   text-align: center;
-  transition: border-color 0.3s;
+  transition: all 0.3s;
+  background-color: #fafafa;
+  cursor: pointer;
 }
 
 .upload-area:hover {
   border-color: #409eff;
+  background-color: #f5f7fa;
+}
+
+.upload-area.is-dragover {
+  border-color: #409eff;
+  background-color: #ecf5ff;
+  box-shadow: 0 0 10px rgba(64, 158, 255, 0.2);
 }
 
 .upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .upload-icon {
   font-size: 48px;
-  color: #909399;
+  color: #409eff;
+  transition: transform 0.3s;
+}
+
+.is-dragover .upload-icon {
+  transform: scale(1.2);
 }
 
 .upload-text {
   color: #606266;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .upload-tip {
   font-size: 12px;
   color: #909399;
+  line-height: 1.5;
 }
 
 .progress-area {
