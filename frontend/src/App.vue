@@ -17,11 +17,15 @@
             <el-menu-item index="courses">
               <span>课程管理</span>
             </el-menu-item>
+            <el-menu-item index="selections">
+              <span>选课管理</span>
+            </el-menu-item>
           </el-menu>
         </el-aside>
         <el-main>
           <student-list v-if="activeMenu === 'students'" />
           <course-list v-if="activeMenu === 'courses'" />
+          <selection-list v-if="activeMenu === 'selections'" />
         </el-main>
       </el-container>
     </el-container>
@@ -32,6 +36,7 @@
 import { ref } from 'vue'
 import StudentList from './components/StudentList.vue'
 import CourseList from './components/CourseList.vue'
+import SelectionList from './components/SelectionList.vue'
 
 const activeMenu = ref('students')
 
