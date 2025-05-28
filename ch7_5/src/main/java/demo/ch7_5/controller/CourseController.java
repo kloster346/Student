@@ -6,10 +6,15 @@ import demo.ch7_5.common.BusinessCode;
 import demo.ch7_5.common.Result;
 import demo.ch7_5.common.PageResult;
 import demo.ch7_5.entity.Course;
+import demo.ch7_5.entity.dto.BatchDeleteDTO;
 import demo.ch7_5.service.CourseService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 课程控制器
+ */
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
@@ -73,5 +78,17 @@ public class CourseController {
       return Result.success(null, "删除成功");
     }
     return Result.failed("删除失败");
+  }
+
+  /**
+   * 批量删除课程
+   *
+   * @param batchDeleteDTO 批量删除请求
+   * @return 删除结果
+   */
+  @DeleteMapping("/batch")
+  public Result<String> batchDelete(@Valid @RequestBody BatchDeleteDTO batchDeleteDTO) {
+    int count = courseService.batchDelete(batchDeleteDTO);
+    return Result.success("成功删除 " + count + " 条记录");
   }
 }
