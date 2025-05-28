@@ -6,6 +6,7 @@
       <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
         批量删除
       </el-button>
+      <el-button type="success" @click="showImportDialog">导入数据</el-button>
     </div>
 
     <!-- 数据表格 -->
@@ -77,6 +78,15 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 导入对话框 -->
+    <el-dialog v-model="importDialogVisible" title="导入课程数据" width="650px">
+      <file-import
+        :upload-url="'http://localhost:8081/api/courses/import'"
+        :format-example="csvFormatExample"
+        @success="handleImportSuccess"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -84,6 +94,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCourses, addCourse, updateCourse, deleteCourse, deleteCourseBatch } from '@/api'
+import FileImport from './FileImport.vue'
 
 // 表格数据
 const tableData = ref([])
@@ -117,6 +128,12 @@ const rules = {
   credit: [{ required: true, message: '请输入学分', trigger: 'blur' }],
   cdept: [{ required: true, message: '请输入开课系别', trigger: 'blur' }]
 }
+
+// 导入相关
+const importDialogVisible = ref(false)
+const csvFormatExample = `课程号,课程名,学分,开课系别
+C001,计算机网络,4,计算机系
+C002,数据库原理,3,信息系`
 
 // 加载数据
 const loadData = async () => {
@@ -224,6 +241,15 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   page.value = val
   loadData()
+}
+
+const showImportDialog = () => {
+  importDialogVisible.value = true
+}
+
+const handleImportSuccess = () => {
+  importDialogVisible.value = false
+  loadData() // 重新加载数据
 }
 
 // 初始加载

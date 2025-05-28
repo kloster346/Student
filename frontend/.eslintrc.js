@@ -6,16 +6,23 @@ module.exports = {
     es2021: true
   },
   extends: [
-    'plugin:vue/vue3-recommended',
+    'plugin:vue/vue3-essential',
     'eslint:recommended'
   ],
   parserOptions: {
     ecmaVersion: 2021,
-    requireConfigFile: false,
-    parser: '@babel/eslint-parser'
+    sourceType: 'module'
   },
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-    'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'vue/no-setup-props-destructure': 'error',
+    'vue/script-setup-uses-vars': 'error'
+  },
+  globals: {
+    defineProps: 'readonly',
+    defineEmits: 'readonly',
+    defineExpose: 'readonly',
+    withDefaults: 'readonly'
   }
 } 

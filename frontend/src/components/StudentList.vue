@@ -6,6 +6,7 @@
       <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
         批量删除
       </el-button>
+      <el-button type="success" @click="showImportDialog">导入数据</el-button>
     </div>
 
     <!-- 数据表格 -->
@@ -84,6 +85,15 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 导入对话框 -->
+    <el-dialog v-model="importDialogVisible" title="导入学生数据" width="650px">
+      <file-import
+        :upload-url="'http://localhost:8081/api/students/import'"
+        :format-example="csvFormatExample"
+        @success="handleImportSuccess"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -91,6 +101,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getStudents, addStudent, updateStudent, deleteStudent, deleteStudentBatch } from '@/api'
+import FileImport from './FileImport.vue'
 
 // 表格数据
 const tableData = ref([])
@@ -126,6 +137,12 @@ const rules = {
   sage: [{ required: true, message: '请输入年龄', trigger: 'blur' }],
   sdept: [{ required: true, message: '请输入系别', trigger: 'blur' }]
 }
+
+// 导入相关
+const importDialogVisible = ref(false)
+const csvFormatExample = `学号,姓名,性别,年龄,系别
+2024001,张三,男,20,计算机系
+2024002,李四,女,19,信息系`
 
 // 加载数据
 const loadData = async () => {
@@ -234,6 +251,15 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   page.value = val
   loadData()
+}
+
+const showImportDialog = () => {
+  importDialogVisible.value = true
+}
+
+const handleImportSuccess = () => {
+  importDialogVisible.value = false
+  loadData() // 重新加载数据
 }
 
 // 初始加载

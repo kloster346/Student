@@ -6,6 +6,7 @@
       <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
         批量删除
       </el-button>
+      <el-button type="success" @click="showImportDialog">导入数据</el-button>
     </div>
 
     <!-- 数据表格 -->
@@ -91,6 +92,15 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 导入对话框 -->
+    <el-dialog v-model="importDialogVisible" title="导入选课数据" width="650px">
+      <file-import
+        :upload-url="'http://localhost:8081/api/sc/import'"
+        :format-example="csvFormatExample"
+        @success="handleImportSuccess"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -98,6 +108,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSelections, addSelection, updateGrade, deleteSelection, deleteSelectionBatch } from '@/api'
+import FileImport from './FileImport.vue'
 
 // 表格数据
 const tableData = ref([])
@@ -132,6 +143,12 @@ const rules = {
     { type: 'number', min: 0, max: 100, message: '成绩必须在0-100之间', trigger: 'blur' }
   ]
 }
+
+// 导入相关
+const importDialogVisible = ref(false)
+const csvFormatExample = `学号,课程号,成绩
+2024001,C001,85.5
+2024002,C002,92.0`
 
 // 加载数据
 const loadData = async () => {
@@ -254,6 +271,15 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   page.value = val
   loadData()
+}
+
+const showImportDialog = () => {
+  importDialogVisible.value = true
+}
+
+const handleImportSuccess = () => {
+  importDialogVisible.value = false
+  loadData() // 重新加载数据
 }
 
 // 初始加载
