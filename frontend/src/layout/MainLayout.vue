@@ -18,6 +18,10 @@
           <el-icon><List /></el-icon>
           <span>选课管理</span>
         </el-menu-item>
+        <el-menu-item index="/query">
+          <el-icon><Search /></el-icon>
+          <span>选课查询</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -32,7 +36,7 @@
 </template>
 
 <script setup>
-import { User, Reading, List } from '@element-plus/icons-vue'
+import { User, Reading, List, Search } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

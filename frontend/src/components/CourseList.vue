@@ -1,88 +1,79 @@
 <template>
   <div class="course-list">
-    <h2>课程管理</h2>
-    
-    <!-- 添加课程表单 -->
-    <el-form :inline="true" :model="newCourse" class="demo-form-inline">
-      <el-form-item label="课程号">
-        <el-input v-model="newCourse.cno" placeholder="课程号" />
-      </el-form-item>
-      <el-form-item label="课程名">
-        <el-input v-model="newCourse.cname" placeholder="课程名" />
-      </el-form-item>
-      <el-form-item label="学分">
-        <el-input-number v-model="newCourse.credit" :min="1" :max="10" placeholder="学分" />
-      </el-form-item>
-      <el-form-item label="开课系别">
-        <el-input v-model="newCourse.cdept" placeholder="开课系别" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="handleAdd">添加课程</el-button>
-      </el-form-item>
-    </el-form>
-
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="请输入课程号或课程名搜索"
-        style="width: 200px"
-        clearable
-        @clear="handleSearch"
-        @keyup.enter="handleSearch"
-      >
-        <template #append>
-          <el-button @click="handleSearch">
-            <el-icon><Search /></el-icon>
-          </el-button>
-        </template>
-      </el-input>
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <el-button type="primary" @click="handleAdd">添加课程</el-button>
+      <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
+        批量删除
+      </el-button>
     </div>
 
-    <!-- 课程列表 -->
-    <el-table :data="courses" style="width: 100%" v-loading="loading">
+    <!-- 数据表格 -->
+    <el-table
+      v-loading="loading"
+      :data="tableData"
+      border
+      style="width: 100%"
+      @selection-change="handleSelectionChange"
+    >
+      <el-table-column type="selection" width="55" />
       <el-table-column prop="cno" label="课程号" width="120" />
-      <el-table-column prop="cname" label="课程名" width="180" />
-      <el-table-column prop="credit" label="学分" width="100" />
-      <el-table-column prop="cdept" label="开课系别" width="180" />
-      <el-table-column label="操作" width="200">
-        <template #default="scope">
-          <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+      <el-table-column prop="cname" label="课程名称" width="200" />
+      <el-table-column prop="credit" label="学分" width="80" />
+      <el-table-column prop="cdept" label="开课系别" />
+      <el-table-column label="操作" width="200" fixed="right">
+        <template #default="{ row }">
+          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 分页器 -->
+    <!-- 分页 -->
     <div class="pagination-container">
       <el-pagination
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :page-sizes="[10, 20, 30, 50]"
+        :current-page="page"
+        :page-size="size"
+        :page-sizes="[10, 20, 50, 100]"
         :total="total"
         layout="total, sizes, prev, pager, next, jumper"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
+        @update:current-page="page = $event"
+        @update:page-size="size = $event"
       />
     </div>
 
-    <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" title="编辑课程信息">
-      <el-form :model="editingCourse">
-        <el-form-item label="课程名">
-          <el-input v-model="editingCourse.cname" />
+    <!-- 添加/编辑对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogType === 'add' ? '添加课程' : '编辑课程'"
+      width="500px"
+    >
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="80px"
+        style="padding: 0 20px"
+      >
+        <el-form-item label="课程号" prop="cno">
+          <el-input v-model="form.cno" :disabled="dialogType === 'edit'" />
         </el-form-item>
-        <el-form-item label="学分">
-          <el-input-number v-model="editingCourse.credit" :min="1" :max="10" />
+        <el-form-item label="课程名称" prop="cname">
+          <el-input v-model="form.cname" />
         </el-form-item>
-        <el-form-item label="开课系别">
-          <el-input v-model="editingCourse.cdept" />
+        <el-form-item label="学分" prop="credit">
+          <el-input-number v-model="form.credit" :min="0" :max="10" :precision="1" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="开课系别" prop="cdept">
+          <el-input v-model="form.cdept" />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleUpdate">确定</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -90,127 +81,153 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
-import { getCourses, addCourse, updateCourse, deleteCourse } from '../api'
+import { ref, reactive } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getCourses, addCourse, updateCourse, deleteCourse, deleteCourseBatch } from '@/api'
 
-// 课程列表数据
-const courses = ref([])
+// 表格数据
+const tableData = ref([])
 const loading = ref(false)
-
-// 分页相关
-const currentPage = ref(1)
-const pageSize = ref(10)
 const total = ref(0)
+const page = ref(1)
+const size = ref(10)
+const selectedRows = ref([])
 
-// 搜索相关
-const searchKeyword = ref('')
-
-// 新课程表单数据
-const newCourse = ref({
+// 对话框数据
+const dialogVisible = ref(false)
+const dialogType = ref('add')
+const formRef = ref(null)
+const form = reactive({
   cno: '',
   cname: '',
-  credit: 3,
+  credit: 2,
   cdept: ''
 })
 
-// 编辑相关数据
-const dialogVisible = ref(false)
-const editingCourse = ref({})
+// 表单验证规则
+const rules = {
+  cno: [
+    { required: true, message: '请输入课程号', trigger: 'blur' },
+    { pattern: /^[A-Z]\d{3}$/, message: '课程号必须是1个大写字母后跟3位数字', trigger: 'blur' }
+  ],
+  cname: [
+    { required: true, message: '请输入课程名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  credit: [{ required: true, message: '请输入学分', trigger: 'blur' }],
+  cdept: [{ required: true, message: '请输入开课系别', trigger: 'blur' }]
+}
 
-// 获取课程列表
-const fetchCourses = async () => {
+// 加载数据
+const loadData = async () => {
   loading.value = true
   try {
-    const response = await getCourses({
-      page: currentPage.value,
-      size: pageSize.value,
-      keyword: searchKeyword.value
-    })
-    courses.value = response.data.data.list
-    total.value = response.data.data.total
-  } catch (error) {
-    ElMessage.error('获取课程列表失败')
+    const params = {
+      page: page.value,
+      size: size.value
+    }
+    const response = await getCourses(params)
+    tableData.value = response.list
+    total.value = response.total
   } finally {
     loading.value = false
   }
 }
 
-// 处理搜索
-const handleSearch = () => {
-  currentPage.value = 1
-  fetchCourses()
+// 处理选择变化
+const handleSelectionChange = (rows) => {
+  selectedRows.value = rows
 }
 
-// 处理页码改变
-const handleCurrentChange = (page) => {
-  currentPage.value = page
-  fetchCourses()
-}
-
-// 处理每页数量改变
-const handleSizeChange = (size) => {
-  pageSize.value = size
-  currentPage.value = 1
-  fetchCourses()
-}
-
-// 添加课程
-const handleAdd = async () => {
-  try {
-    await addCourse(newCourse.value)
-    ElMessage.success('添加成功')
-    fetchCourses()
-    // 清空表单
-    newCourse.value = {
-      cno: '',
-      cname: '',
-      credit: 3,
-      cdept: ''
-    }
-  } catch (error) {
-    ElMessage.error('添加失败')
-  }
-}
-
-// 打开编辑对话框
-const handleEdit = (row) => {
-  editingCourse.value = { ...row }
+// 处理添加
+const handleAdd = () => {
+  dialogType.value = 'add'
+  form.cno = ''
+  form.cname = ''
+  form.credit = 2
+  form.cdept = ''
   dialogVisible.value = true
 }
 
-// 更新课程信息
-const handleUpdate = async () => {
-  try {
-    await updateCourse(editingCourse.value.cno, editingCourse.value)
-    ElMessage.success('更新成功')
-    dialogVisible.value = false
-    fetchCourses()
-  } catch (error) {
-    ElMessage.error('更新失败')
-  }
+// 处理编辑
+const handleEdit = (row) => {
+  dialogType.value = 'edit'
+  Object.assign(form, row)
+  dialogVisible.value = true
 }
 
-// 删除课程
+// 处理删除
 const handleDelete = async (row) => {
   try {
+    await ElMessageBox.confirm('确定要删除这条记录吗？', '提示', {
+      type: 'warning'
+    })
     await deleteCourse(row.cno)
     ElMessage.success('删除成功')
-    // 如果当前页只有一条数据，删除后跳转到上一页
-    if (courses.value.length === 1 && currentPage.value > 1) {
-      currentPage.value--
-    }
-    fetchCourses()
+    loadData()
   } catch (error) {
-    ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+    }
   }
 }
 
-// 页面加载时获取课程列表
-onMounted(() => {
-  fetchCourses()
-})
+// 处理批量删除
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedRows.value.length} 条记录吗？`,
+      '提示',
+      {
+        type: 'warning'
+      }
+    )
+    const ids = selectedRows.value.map(row => row.cno)
+    await deleteCourseBatch(ids)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+    }
+  }
+}
+
+// 处理表单提交
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+    if (dialogType.value === 'add') {
+      await addCourse(form)
+      ElMessage.success('添加成功')
+    } else {
+      await updateCourse(form.cno, form)
+      ElMessage.success('更新成功')
+    }
+    dialogVisible.value = false
+    loadData()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('提交失败:', error)
+    }
+  }
+}
+
+// 处理每页数量变化
+const handleSizeChange = (val) => {
+  size.value = val
+  loadData()
+}
+
+// 处理页码变化
+const handleCurrentChange = (val) => {
+  page.value = val
+  loadData()
+}
+
+// 初始加载
+loadData()
 </script>
 
 <style scoped>
@@ -218,7 +235,7 @@ onMounted(() => {
   padding: 20px;
 }
 
-.search-bar {
+.toolbar {
   margin-bottom: 20px;
 }
 
