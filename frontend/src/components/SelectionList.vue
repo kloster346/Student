@@ -29,8 +29,26 @@
       </el-form-item>
     </el-form>
 
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchKeyword"
+        placeholder="请输入学号或课程号搜索"
+        style="width: 200px"
+        clearable
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      >
+        <template #append>
+          <el-button @click="handleSearch">
+            <el-icon><Search /></el-icon>
+          </el-button>
+        </template>
+      </el-input>
+    </div>
+
     <!-- 选课记录列表 -->
-    <el-table :data="selections" style="width: 100%">
+    <el-table :data="selections" style="width: 100%" v-loading="loading">
       <el-table-column label="学号" width="120">
         <template #default="scope">
           {{ getStudentName(scope.row.sno) }}
@@ -64,6 +82,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页器 -->
+    <div class="pagination-container">
+      <el-pagination
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-sizes="[10, 20, 30, 50]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+
     <!-- 成绩录入对话框 -->
     <el-dialog v-model="dialogVisible" title="成绩录入">
       <el-form :model="gradeForm">
@@ -89,6 +120,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { 
   getSelections, 
   addSelection, 
@@ -102,6 +134,15 @@ import {
 const selections = ref([])
 const students = ref([])
 const courses = ref([])
+const loading = ref(false)
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+// 搜索相关
+const searchKeyword = ref('')
 
 // 新选课数据
 const newSelection = ref({
@@ -119,11 +160,19 @@ const gradeForm = ref({
 
 // 获取选课记录
 const fetchSelections = async () => {
+  loading.value = true
   try {
-    const response = await getSelections()
+    const response = await getSelections({
+      page: currentPage.value,
+      size: pageSize.value,
+      keyword: searchKeyword.value
+    })
     selections.value = response.data.data.list
+    total.value = response.data.data.total
   } catch (error) {
     ElMessage.error('获取选课记录失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -145,6 +194,25 @@ const fetchCourses = async () => {
   } catch (error) {
     ElMessage.error('获取课程列表失败')
   }
+}
+
+// 处理搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchSelections()
+}
+
+// 处理页码改变
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  fetchSelections()
+}
+
+// 处理每页数量改变
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchSelections()
 }
 
 // 获取学生姓名
@@ -201,11 +269,15 @@ const handleUpdate = async () => {
   }
 }
 
-// 退课
+// 删除选课记录
 const handleDelete = async (row) => {
   try {
     await deleteSelection(row.sno, row.cno)
     ElMessage.success('退课成功')
+    // 如果当前页只有一条数据，删除后跳转到上一页
+    if (selections.value.length === 1 && currentPage.value > 1) {
+      currentPage.value--
+    }
     fetchSelections()
   } catch (error) {
     ElMessage.error('退课失败')
@@ -225,7 +297,13 @@ onMounted(() => {
   padding: 20px;
 }
 
-.el-select {
-  width: 220px;
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style> 

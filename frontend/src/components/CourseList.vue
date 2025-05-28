@@ -21,8 +21,26 @@
       </el-form-item>
     </el-form>
 
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchKeyword"
+        placeholder="请输入课程号或课程名搜索"
+        style="width: 200px"
+        clearable
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      >
+        <template #append>
+          <el-button @click="handleSearch">
+            <el-icon><Search /></el-icon>
+          </el-button>
+        </template>
+      </el-input>
+    </div>
+
     <!-- 课程列表 -->
-    <el-table :data="courses" style="width: 100%">
+    <el-table :data="courses" style="width: 100%" v-loading="loading">
       <el-table-column prop="cno" label="课程号" width="120" />
       <el-table-column prop="cname" label="课程名" width="180" />
       <el-table-column prop="credit" label="学分" width="100" />
@@ -34,6 +52,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 分页器 -->
+    <div class="pagination-container">
+      <el-pagination
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-sizes="[10, 20, 30, 50]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
 
     <!-- 编辑对话框 -->
     <el-dialog v-model="dialogVisible" title="编辑课程信息">
@@ -61,10 +92,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { getCourses, addCourse, updateCourse, deleteCourse } from '../api'
 
 // 课程列表数据
 const courses = ref([])
+const loading = ref(false)
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+// 搜索相关
+const searchKeyword = ref('')
 
 // 新课程表单数据
 const newCourse = ref({
@@ -80,12 +121,39 @@ const editingCourse = ref({})
 
 // 获取课程列表
 const fetchCourses = async () => {
+  loading.value = true
   try {
-    const response = await getCourses()
+    const response = await getCourses({
+      page: currentPage.value,
+      size: pageSize.value,
+      keyword: searchKeyword.value
+    })
     courses.value = response.data.data.list
+    total.value = response.data.data.total
   } catch (error) {
     ElMessage.error('获取课程列表失败')
+  } finally {
+    loading.value = false
   }
+}
+
+// 处理搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  fetchCourses()
+}
+
+// 处理页码改变
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  fetchCourses()
+}
+
+// 处理每页数量改变
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  fetchCourses()
 }
 
 // 添加课程
@@ -129,6 +197,10 @@ const handleDelete = async (row) => {
   try {
     await deleteCourse(row.cno)
     ElMessage.success('删除成功')
+    // 如果当前页只有一条数据，删除后跳转到上一页
+    if (courses.value.length === 1 && currentPage.value > 1) {
+      currentPage.value--
+    }
     fetchCourses()
   } catch (error) {
     ElMessage.error('删除失败')
@@ -144,5 +216,15 @@ onMounted(() => {
 <style scoped>
 .course-list {
   padding: 20px;
+}
+
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style> 
