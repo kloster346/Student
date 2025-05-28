@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="demo.ch7_5.mapper.SCMapper">
+    <!-- 批量删除选课记录 -->
+    <delete id="batchDelete">
+        DELETE FROM sc WHERE (sno, cno) IN
+        <foreach collection="snos" item="sno" index="index" open="(" separator="," close=")">
+            (#{sno}, #{cnos[${index}]})
+        </foreach>
+    </delete>
+</mapper> 
