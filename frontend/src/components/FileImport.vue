@@ -20,8 +20,6 @@
         :on-error="handleError"
         :on-progress="handleProgress"
         :headers="headers"
-        :auto-upload="true"
-        :http-request="customUpload"
       >
         <div class="upload-content">
           <el-icon class="upload-icon"><upload-filled /></el-icon>
@@ -82,10 +80,10 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps } from 'vue'
+/* eslint-disable no-undef */
+import { ref, computed } from 'vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
 
 const props = defineProps({
   uploadUrl: {
@@ -166,7 +164,7 @@ const handleSuccess = (response) => {
   uploading.value = false
   if (response.code === 200) {
     uploadResult.value = response.data
-    failures.value = response.data.failures || []
+    failures.value = response.data.errors || []
     const { successCount, totalCount } = response.data
     if (successCount === totalCount) {
       ElMessage.success(`成功导入 ${successCount} 条数据`)
@@ -198,32 +196,6 @@ const handleError = (error) => {
   }
 }
 
-// 自定义上传方法
-const customUpload = async ({ file }) => {
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    uploading.value = true
-    uploadProgress.value = 0
-    
-    const response = await axios.post(props.uploadUrl, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...headers
-      },
-      onUploadProgress: (progressEvent) => {
-        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-        uploadProgress.value = percent
-      }
-    })
-    
-    handleSuccess(response.data)
-  } catch (error) {
-    handleError(error)
-  }
-}
-
 // 处理拖拽相关事件
 const handleDragenter = (e) => {
   e.preventDefault()
@@ -240,27 +212,21 @@ const handleDragleave = (e) => {
   isDragover.value = false
 }
 
-const handleDrop = async (e) => {
+const handleDrop = (e) => {
   e.preventDefault()
   isDragover.value = false
   const files = e.dataTransfer.files
-  
   if (files.length > 0) {
     const file = files[0]
-    
-    // 验证文件
     if (!file.name.toLowerCase().endsWith('.csv')) {
       ElMessage.error('只能上传CSV文件！')
       return
     }
-    
     if (file.size > 5 * 1024 * 1024) {
       ElMessage.error('文件大小不能超过5MB！')
       return
     }
-    
-    // 使用自定义上传方法
-    await customUpload({ file })
+    uploadRef.value?.submit(file)
   }
 }
 </script>
