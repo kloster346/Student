@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import demo.ch7_5.common.BusinessCode;
 import demo.ch7_5.common.Result;
+import demo.ch7_5.common.PageResult;
 import demo.ch7_5.entity.Student;
 import demo.ch7_5.service.StudentService;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -74,16 +74,4 @@ public class StudentController {
     }
     return Result.failed("删除失败");
   }
-}
-
-@Getter
-class PageResult<T> {
-  private long total;
-  private java.util.List<T> list;
-
-  public PageResult(long total, java.util.List<T> list) {
-    this.total = total;
-    this.list = list;
-  }
-
 }

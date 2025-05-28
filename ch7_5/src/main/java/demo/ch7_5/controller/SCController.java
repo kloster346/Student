@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import demo.ch7_5.common.BusinessCode;
 import demo.ch7_5.common.Result;
+import demo.ch7_5.common.PageResult;
 import demo.ch7_5.entity.SC;
 import demo.ch7_5.service.SCService;
 import demo.ch7_5.service.StudentService;
