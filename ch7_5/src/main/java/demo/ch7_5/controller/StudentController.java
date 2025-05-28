@@ -6,10 +6,18 @@ import demo.ch7_5.common.BusinessCode;
 import demo.ch7_5.common.Result;
 import demo.ch7_5.common.PageResult;
 import demo.ch7_5.entity.Student;
+import demo.ch7_5.entity.dto.BatchDeleteDTO;
 import demo.ch7_5.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 学生Controller
+ */
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
@@ -73,5 +81,16 @@ public class StudentController {
       return Result.success(null, "删除成功");
     }
     return Result.failed("删除失败");
+  }
+
+  /**
+   * 批量删除学生
+   */
+  @DeleteMapping("/batch")
+  public Result<Map<String, Object>> deleteBatch(@Validated @RequestBody BatchDeleteDTO dto) {
+    int count = studentService.deleteBatch(dto.getIds());
+    Map<String, Object> result = new HashMap<>();
+    result.put("deletedCount", count);
+    return Result.success(result);
   }
 }
